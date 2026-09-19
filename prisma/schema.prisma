@@ -28,14 +28,40 @@ model User {
 }
 
 model Stream {
-  id               String   @id @default(cuid())
+  id               String     @id @default(cuid())
   userId           String
-  user             User     @relation(fields: [userId], references: [id])
+  user             User       @relation(fields: [userId], references: [id])
   title            String
   description      String?
   thumbnailUrl     String?
   youtubeVideoId   String?
   youtubeChannelId String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  donations        Donation[]
+
+  @@unique([userId, youtubeVideoId])
+}
+
+enum DonationStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Donation {
+  id                 String         @id @default(cuid())
+  streamId           String
+  stream             Stream         @relation(fields: [streamId], references: [id])
+  viewerName         String
+  message            String?
+  amount             Int
+  currency           String         @default("INR")
+  status             DonationStatus @default(PENDING)
+  razorpayOrderId    String?        @unique
+  razorpayPaymentId  String?        @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 }

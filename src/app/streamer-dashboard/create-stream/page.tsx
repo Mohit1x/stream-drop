@@ -8,8 +8,21 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { YouTubeConnectButton } from "@/components/youtube-connect-button";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Radio, RefreshCw, PenLine, Plus } from "lucide-react";
-import { FaYoutube } from "react-icons/fa";
+import { ArrowLeft, Radio, RefreshCw, PenLine } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function YouTubeIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden="true">
+      <path
+        fill="#FF0000"
+        d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8z"
+      />
+      <path fill="#FFFFFF" d="M9.75 15.5 15.5 12 9.75 8.5v7z" />
+    </svg>
+  );
+}
 
 type Mode = "choose" | "manual" | "youtube";
 
@@ -28,12 +41,25 @@ type YouTubeLiveResponse = {
   error?: string;
   channel?: { id: string; title: string; thumbnailUrl: string | null } | null;
   liveStream?: StreamItem | null;
-  pastStreams?: StreamItem[];
+};
+
+type StreamWithCount = {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  _count: { donations: number };
 };
 
 async function fetchYouTubeLiveStream(): Promise<YouTubeLiveResponse> {
   const res = await fetch("/api/youtube/live-stream");
   return res.json();
+}
+
+async function fetchMyStreams(): Promise<StreamWithCount[]> {
+  const res = await fetch("/api/streams?page=1&limit=20");
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.streams ?? [];
 }
 
 export default function CreateStreamPage() {
@@ -53,6 +79,7 @@ export default function CreateStreamPage() {
   const {
     data: ytData,
     isPending: ytLoading,
+    isFetching: ytFetching,
     refetch: refetchYt,
   } = useQuery({
     queryKey: ["youtube-live-stream"],
@@ -62,13 +89,23 @@ export default function CreateStreamPage() {
     staleTime: 0,
   });
 
-  async function createStream(payload: {
-    title: string;
-    description?: string;
-    thumbnailUrl?: string | null;
-    youtubeVideoId?: string | null;
-    youtubeChannelId?: string | null;
-  }) {
+  const { data: myStreams, isPending: streamsPending } = useQuery({
+    queryKey: ["my-streams"],
+    queryFn: fetchMyStreams,
+    enabled: mode === "youtube",
+    staleTime: 30_000,
+  });
+
+  async function createStream(
+    payload: {
+      title: string;
+      description?: string;
+      thumbnailUrl?: string | null;
+      youtubeVideoId?: string | null;
+      youtubeChannelId?: string | null;
+    },
+    redirectToLive = false,
+  ) {
     setSubmitting(true);
     setError(null);
     try {
@@ -82,7 +119,11 @@ export default function CreateStreamPage() {
         setError(data.error ?? "Failed to create stream.");
         return;
       }
-      router.push("/streamer-dashboard");
+      if (redirectToLive) {
+        router.push("/streamer-dashboard/live-stream");
+      } else {
+        router.push("/streamer-dashboard");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -97,13 +138,16 @@ export default function CreateStreamPage() {
   function handleUseYouTubeStream() {
     if (!ytData?.liveStream) return;
     const ls = ytData.liveStream;
-    createStream({
-      title: ls.title,
-      description: ls.description || undefined,
-      thumbnailUrl: ls.thumbnailUrl,
-      youtubeVideoId: ls.videoId,
-      youtubeChannelId: ls.channelId,
-    });
+    createStream(
+      {
+        title: ls.title,
+        description: ls.description || undefined,
+        thumbnailUrl: ls.thumbnailUrl,
+        youtubeVideoId: ls.videoId,
+        youtubeChannelId: ls.channelId,
+      },
+      true,
+    );
   }
 
   return (
@@ -135,7 +179,7 @@ export default function CreateStreamPage() {
               onClick={() => setMode("youtube")}
               className="flex items-start gap-3 border border-border rounded-xl p-5 hover:border-red-500 hover:bg-red-500/5 transition-colors text-left w-full"
             >
-              <FaYoutube className="w-6 h-6 text-red-500 mt-0.5 flex-shrink-0" />
+              <YouTubeIcon className="w-6 h-6 mt-0.5 flex-shrink-0" />
               <div>
                 <span className="font-semibold text-base block">
                   Import from YouTube
@@ -227,14 +271,33 @@ export default function CreateStreamPage() {
               <ArrowLeft className="w-4 h-4" /> Back
             </button>
 
-            {ytLoading && (
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <div className="w-5 h-5 rounded-full border-2 border-purple-500 border-t-transparent animate-spin" />
-                <span>Checking your YouTube channel…</span>
+            {(ytLoading || ytFetching) && (
+              <div className="flex flex-col gap-5">
+                {/* Channel card skeleton */}
+                <div className="flex items-center gap-3 bg-card border border-border rounded-xl p-4">
+                  <Skeleton className="w-10 h-10 rounded-full flex-shrink-0" />
+                  <div className="flex-1 flex flex-col gap-2">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-8 w-28 rounded-lg" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                </div>
+                {/* Live stream card skeleton */}
+                <div className="flex flex-col gap-4 bg-card border border-border rounded-xl p-5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="w-full rounded-lg aspect-video" />
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                  <Skeleton className="h-11 w-full rounded-lg" />
+                </div>
               </div>
             )}
 
-            {!ytLoading && ytData && (
+            {!ytLoading && !ytFetching && ytData && (
               <>
                 {(!ytData.connected ||
                   ytData.error === "youtube_scope_missing") && (
@@ -272,12 +335,23 @@ export default function CreateStreamPage() {
                           className="w-10 h-10 rounded-full"
                         />
                       )}
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-0.5 flex items-center gap-1.5">
-                          <FaYoutube className="w-4 h-4 text-red-500" /> YouTube
-                          Connected
+                          <YouTubeIcon className="w-4 h-4" /> YouTube Connected
                         </p>
-                        <p className="font-semibold">{ytData.channel.title}</p>
+                        <p className="font-semibold truncate">
+                          {ytData.channel.title}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <YouTubeConnectButton
+                          variant="switch"
+                          onConnected={() => refetchYt()}
+                        />
+                        <YouTubeConnectButton
+                          variant="disconnect"
+                          onConnected={() => refetchYt()}
+                        />
                       </div>
                     </div>
 
@@ -322,77 +396,74 @@ export default function CreateStreamPage() {
                     )}
 
                     {!ytData.liveStream && (
-                      <div className="flex flex-col gap-4">
-                        <div className="bg-card border border-border rounded-xl p-5">
-                          <p className="font-medium">
-                            No currently live stream found.
-                          </p>
-                          <p className="text-muted-foreground text-sm mt-1">
-                            Start your stream on YouTube first, then try again.
-                          </p>
-                          <button
-                            onClick={() => refetchYt()}
-                            className="mt-3 flex items-center gap-1.5 border border-border hover:border-purple-500 font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
-                          >
-                            <RefreshCw className="w-4 h-4" /> Check Again
-                          </button>
-                        </div>
-
-                        {ytData.pastStreams &&
-                          ytData.pastStreams.length > 0 && (
-                            <div className="flex flex-col gap-3">
-                              <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
-                                Recent Streams
-                              </p>
-                              {ytData.pastStreams.map((stream) => (
-                                <div
-                                  key={stream.videoId}
-                                  className="flex gap-4 bg-card border border-border rounded-xl p-4 items-start"
-                                >
-                                  {stream.thumbnailUrl && (
-                                    <Image
-                                      src={stream.thumbnailUrl}
-                                      alt={stream.title}
-                                      width={112}
-                                      height={63}
-                                      className="w-28 rounded-lg object-cover aspect-video flex-shrink-0"
-                                    />
-                                  )}
-                                  <div className="flex flex-col gap-2 flex-1 min-w-0">
-                                    <p className="font-medium text-sm truncate">
-                                      {stream.title}
-                                    </p>
-                                    {stream.description && (
-                                      <p className="text-muted-foreground text-xs line-clamp-2">
-                                        {stream.description}
-                                      </p>
-                                    )}
-                                    <button
-                                      onClick={() =>
-                                        createStream({
-                                          title: stream.title,
-                                          description:
-                                            stream.description || undefined,
-                                          thumbnailUrl: stream.thumbnailUrl,
-                                          youtubeVideoId: stream.videoId,
-                                          youtubeChannelId: stream.channelId,
-                                        })
-                                      }
-                                      disabled={submitting}
-                                      className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors w-fit"
-                                    >
-                                      Use This Stream
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                      <div className="bg-card border border-border rounded-xl p-5">
+                        <p className="font-medium">No currently live stream found.</p>
+                        <p className="text-muted-foreground text-sm mt-1">
+                          Start your stream on YouTube first, then try again.
+                        </p>
+                        <button
+                          onClick={() => refetchYt()}
+                          disabled={ytFetching}
+                          className="mt-3 flex items-center gap-1.5 border border-border hover:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm"
+                        >
+                          {ytFetching ? (
+                            <Spinner size="xs" />
+                          ) : (
+                            <RefreshCw className="w-4 h-4" />
                           )}
+                          {ytFetching ? "Checking…" : "Check Again"}
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
               </>
+            )}
+
+            {streamsPending && (
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-3 w-40" />
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex items-center gap-3 bg-card border border-border rounded-xl p-4">
+                    <Skeleton className="w-20 h-[45px] rounded-lg flex-shrink-0" />
+                    <div className="flex-1 flex flex-col gap-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!streamsPending && myStreams && myStreams.length > 0 && (
+              <div className="flex flex-col gap-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium">
+                  Your StreamDrop Streams
+                </p>
+                {myStreams.map((stream) => (
+                  <Link
+                    key={stream.id}
+                    href={`/streamer-dashboard/live-stream?streamId=${stream.id}`}
+                    className="flex items-center gap-3 bg-card border border-border rounded-xl p-4 hover:border-purple-500 transition-colors"
+                  >
+                    {stream.thumbnailUrl && (
+                      <Image
+                        src={stream.thumbnailUrl}
+                        alt={stream.title}
+                        width={80}
+                        height={45}
+                        className="w-20 aspect-video object-cover rounded-lg flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{stream.title}</p>
+                      <p className="text-xs text-purple-400 mt-0.5">
+                        {stream._count.donations} superchat{stream._count.donations !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             )}
           </div>
         )}

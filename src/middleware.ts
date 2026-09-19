@@ -6,6 +6,12 @@ const isPublicRoute = createRouteMatcher([
   "/sign-up(.*)",
   "/sso-callback(.*)",
   "/api/webhooks/clerk",
+  "/api/webhooks/razorpay",
+  "/api/payments/razorpay/verify",
+  "/stream/(.*)",
+  "/overlay/(.*)",
+  "/api/streams/:streamId",
+  "/api/streams/:streamId/donations",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

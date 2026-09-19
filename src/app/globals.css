@@ -77,3 +77,7 @@ body {
 .cl-userButtonPopoverFooter {
   display: none;
 }
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}

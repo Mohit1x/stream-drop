@@ -122,12 +122,17 @@ export async function GET() {
       pastStreams,
     });
   } catch (err: unknown) {
-    const error = err as { code?: number; message?: string };
-    if (error?.code === 403) {
-      return NextResponse.json({ connected: false, error: "youtube_forbidden" });
+    const error = err as { code?: number; message?: string; errors?: { reason?: string }[] };
+    const reason = error?.errors?.[0]?.reason;
+    console.error("[youtube/live-stream] code:", error?.code, "reason:", reason, "message:", error?.message);
+    if (error?.code === 401 || reason === "authError") {
+      return NextResponse.json({ connected: false, error: "youtube_token_expired" });
     }
-    if (error?.code === 401) {
-      return NextResponse.json({ connected: false, error: "youtube_not_connected" });
+    if (error?.code === 403) {
+      if (reason === "forbidden" || reason === "accessNotConfigured" || reason === "disabled") {
+        return NextResponse.json({ connected: false, error: "youtube_api_not_enabled" });
+      }
+      return NextResponse.json({ connected: false, error: "youtube_forbidden" });
     }
     console.error("[youtube/live-stream]", error?.message);
     return NextResponse.json(
