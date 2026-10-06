@@ -78,6 +78,100 @@ body {
   display: none;
 }
 
+/* ── Superchat card animations ─────────────────────────────────────────── */
+
+/* Shimmer sweep overlay */
+.sc-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: sc-shimmer-sweep 2.4s ease-in-out infinite;
+}
+
+@keyframes sc-shimmer-sweep {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* Pulse ring */
+.sc-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1px solid currentColor;
+  opacity: 0;
+  animation: sc-pulse-ring 2s ease-out infinite;
+}
+
+@keyframes sc-pulse-ring {
+  0%   { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 0;   transform: scale(1.04); }
+}
+
+/* ── Entrance animations per tier ──────────────────────────────────────── */
+
+.sc-anim-basic {
+  animation: sc-enter-basic 0.3s ease-out both;
+}
+@keyframes sc-enter-basic {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.sc-anim-hype {
+  animation: sc-enter-hype 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes sc-enter-hype {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sc-anim-epic {
+  animation: sc-enter-epic 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes sc-enter-epic {
+  from { opacity: 0; transform: translateY(14px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sc-anim-legendary {
+  animation: sc-enter-legendary 0.45s cubic-bezier(0.34, 1.8, 0.64, 1) both;
+}
+@keyframes sc-enter-legendary {
+  from { opacity: 0; transform: translateY(18px) scale(0.93) rotate(-0.5deg); }
+  to   { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+.sc-anim-ultra {
+  animation: sc-enter-ultra 0.5s cubic-bezier(0.34, 2, 0.64, 1) both;
+}
+@keyframes sc-enter-ultra {
+  from { opacity: 0; transform: translateY(22px) scale(0.9) rotate(-1deg); }
+  to   { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .sc-anim-basic,
+  .sc-anim-hype,
+  .sc-anim-epic,
+  .sc-anim-legendary,
+  .sc-anim-ultra {
+    animation: none;
+  }
+  .sc-shimmer {
+    animation: none;
+  }
+  .sc-pulse::after {
+    animation: none;
+  }
+}
+
 @keyframes shimmer {
   100% { transform: translateX(100%); }
 }

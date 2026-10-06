@@ -1,3 +1,5 @@
+import "../globals.css";
+
 export default function OverlayLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">

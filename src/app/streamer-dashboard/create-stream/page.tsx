@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { UserButton } from "@clerk/nextjs";
@@ -62,7 +62,7 @@ async function fetchMyStreams(): Promise<StreamWithCount[]> {
   return data.streams ?? [];
 }
 
-export default function CreateStreamPage() {
+function CreateStreamPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("choose");
@@ -469,5 +469,13 @@ export default function CreateStreamPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function CreateStreamPage() {
+  return (
+    <Suspense>
+      <CreateStreamPageInner />
+    </Suspense>
   );
 }

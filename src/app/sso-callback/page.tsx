@@ -2,7 +2,7 @@
 
 import { AuthenticateWithRedirectCallback, useUser } from "@clerk/nextjs";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 
 function ReauthorizeCallback({ redirectUrl }: { redirectUrl: string }) {
   const { user, isLoaded } = useUser();
@@ -14,8 +14,6 @@ function ReauthorizeCallback({ redirectUrl }: { redirectUrl: string }) {
       router.replace(redirectUrl);
       return;
     }
-
-    // Reload user to get the latest token after reauth, then redirect
     user
       .reload()
       .then(() => router.replace(redirectUrl))
@@ -29,7 +27,7 @@ function ReauthorizeCallback({ redirectUrl }: { redirectUrl: string }) {
   );
 }
 
-export default function SSOCallback() {
+function SSOCallbackInner() {
   const searchParams = useSearchParams();
   const redirectUrl = searchParams.get("redirect_url") ?? "/streamer-dashboard";
   const isReauth = searchParams.get("reauth") === "true";
@@ -43,5 +41,13 @@ export default function SSOCallback() {
       signInForceRedirectUrl={redirectUrl}
       signUpForceRedirectUrl={redirectUrl}
     />
+  );
+}
+
+export default function SSOCallback() {
+  return (
+    <Suspense>
+      <SSOCallbackInner />
+    </Suspense>
   );
 }
