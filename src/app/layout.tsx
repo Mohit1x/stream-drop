@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "StreamDrop",
   description: "Stream, donate, connect.",
+  icons: { icon: "/assets/small-logo.png" },
 };
 
 export default function RootLayout({

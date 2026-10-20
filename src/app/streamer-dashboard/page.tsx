@@ -41,9 +41,21 @@ async function syncUser(): Promise<DbUser> {
   return res.json();
 }
 
+type StatsResponse = {
+  totalStreams: number;
+  totalDonations: number;
+  totalEarnings: number;
+};
+
 async function fetchStreams(page: number): Promise<StreamsResponse> {
   const res = await fetch(`/api/streams?page=${page}`);
   if (!res.ok) throw new Error("Failed to fetch streams");
+  return res.json();
+}
+
+async function fetchStats(): Promise<StatsResponse> {
+  const res = await fetch("/api/streams/stats");
+  if (!res.ok) throw new Error("Failed to fetch stats");
   return res.json();
 }
 
@@ -76,6 +88,12 @@ export default function StreamerDashboard() {
     enabled: !!dbUser,
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["streams-stats"],
+    queryFn: fetchStats,
+    enabled: !!dbUser,
+  });
+
   const { data: ytChannel } = useQuery({
     queryKey: ["yt-channel"],
     queryFn: fetchYouTubeChannel,
@@ -91,7 +109,7 @@ export default function StreamerDashboard() {
     <main className="min-h-screen bg-background text-foreground">
       <nav className="border-b border-border px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold tracking-tight">
-          Stream<span className="text-purple-500">Drop</span>
+          <Image src="/assets/logo.png" alt="StreamDrop" width={100} height={28} />
         </h1>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -223,12 +241,12 @@ export default function StreamerDashboard() {
               )}
             </div>
 
-            {/* Placeholder stats */}
+            {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {[
-                { label: "Total Streams", value: "—" },
-                { label: "Total Donations", value: "—" },
-                { label: "Total Earnings", value: "—" },
+                { label: "Total Streams", value: stats ? String(stats.totalStreams) : "—" },
+                { label: "Total Donations", value: stats ? String(stats.totalDonations) : "—" },
+                { label: "Total Earnings", value: stats ? `₹${stats.totalEarnings.toLocaleString("en-IN")}` : "—" },
               ].map((stat) => (
                 <div
                   key={stat.label}

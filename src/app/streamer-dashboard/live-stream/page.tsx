@@ -51,8 +51,8 @@ export default async function LiveStreamPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <nav className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <Link href="/streamer-dashboard" className="text-xl font-bold tracking-tight">
-          Stream<span className="text-purple-500">Drop</span>
+        <Link href="/streamer-dashboard" className="flex items-center">
+          <Image src="/assets/logo.png" alt="StreamDrop" width={100} height={28} />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />

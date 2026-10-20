@@ -38,9 +38,7 @@ export default async function StreamPage({
   return (
     <main className="min-h-screen bg-background text-foreground">
       <nav className="border-b border-border px-6 py-4">
-        <h1 className="text-xl font-bold tracking-tight">
-          Stream<span className="text-purple-500">Drop</span>
-        </h1>
+        <Image src="/assets/logo.png" alt="StreamDrop" width={100} height={28} />
       </nav>
 
       <div className="max-w-2xl mx-auto px-6 py-10 flex flex-col gap-8">

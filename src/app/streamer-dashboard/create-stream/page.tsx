@@ -155,9 +155,9 @@ function CreateStreamPageInner() {
       <nav className="border-b border-border px-6 py-4 flex items-center justify-between">
         <Link
           href="/streamer-dashboard"
-          className="text-xl font-bold tracking-tight"
+          className="flex items-center"
         >
-          Stream<span className="text-purple-500">Drop</span>
+          <Image src="/assets/logo.png" alt="StreamDrop" width={100} height={28} />
         </Link>
         <div className="flex items-center gap-2">
           <ThemeToggle />

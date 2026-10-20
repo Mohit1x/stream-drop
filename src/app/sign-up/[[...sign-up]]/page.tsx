@@ -1,13 +1,12 @@
 import { SignUp } from "@clerk/nextjs";
+import Image from "next/image";
 
 export default function SignUpPage() {
   return (
     <main className="min-h-screen bg-black flex items-center justify-center">
       <div className="flex flex-col items-center gap-6">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-white tracking-tight">
-            Stream<span className="text-purple-500">Drop</span>
-          </h1>
+          <Image src="/assets/logo.png" alt="StreamDrop" width={180} height={60} className="mx-auto" priority />
           <p className="text-zinc-400 mt-2 text-sm">
             Create your streamer account
           </p>
